@@ -1,0 +1,6 @@
+personal-information.ts
+
+node_modules
+*.js
+.DS_Store
+.vscode
