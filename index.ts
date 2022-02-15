@@ -11,7 +11,8 @@ const testStations = {
     neuperlach: 'https://www.corona-teststelle.de/standorte/muenchen-neuperlach',
 }
 enum TestReason {
-    coronaWarnApp = 'CWA',
+    coronaWarnApp, // not existing anymore due to goverment policy, leaving here since it could come back
+    contactPerson,
 }
 
 const config = {
@@ -20,7 +21,7 @@ const config = {
     day: '2021-12-24', // YYYY-MM-DD
     test: 'pcr', // Only pcr supported
     testStation: testStations.deutschesMuseum,
-    testReason: TestReason.coronaWarnApp,
+    testReason: TestReason.contactPerson,
     refreshInterval: 60, // seconds
     showBrowserUI: true,
 }
@@ -47,7 +48,14 @@ async function tryBooking(page: pt.Page, config: Config, personalInformation: Pe
     // Find day
     const days = await page.$$('#termin-kalender > div.days > div > a')
     const day = await findAsync(days, async (day) => {
-        var date = await day.evaluate(e => `${e.getAttribute('data-year')}-${e.getAttribute('data-month')}-${e.getAttribute('data-day')}`)
+        var date = await day.evaluate(e => {
+            const pad = (num: string | number, i: number) => (Array(i).fill('0').join('') + num).slice(-i)
+            const year = e.getAttribute('data-year')
+            const month = pad(e.getAttribute('data-month') || '', 2)
+            const day = pad(e.getAttribute('data-day') || '', 2)
+            console.log(`${year}-${month}-${day}`)
+            return `${year}-${month}-${day}`
+        })
         return date === config.day;
     })
     if (day === undefined) {
@@ -103,6 +111,11 @@ async function tryBooking(page: pt.Page, config: Config, personalInformation: Pe
         await page.click('#jform_params_frage40_label')
         await wait(0.5)
         await page.click('#jform_params_frage40_6_label')
+        await wait(0.5)
+    } else if (config.testReason == TestReason.contactPerson) {
+        await page.click('#jform_params_frage40_label')
+        await wait(0.5)
+        await page.click('#jform_params_frage40_1_label')
         await wait(0.5)
     } else {
         throw new Error('Test Reason is not yet supported')
